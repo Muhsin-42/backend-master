@@ -1,18 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-export interface IUser extends Document {
-  watchHistory: Schema.Types.ObjectId[];
-  username: string;
-  email: string;
-  fullname: string;
-  avatar: string;
-  coverImage: string;
-  password: string;
-  refreshToken: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 const userSchema = new Schema(
   {
