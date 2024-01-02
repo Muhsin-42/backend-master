@@ -1,7 +1,11 @@
+import { RequestHandler, Request, Response, NextFunction } from "express";
+
 // Promise Method
-const asyncHandler = (requestHandler) => (req, res, next) => {
-  Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
-};
+const asyncHandler =
+  (requestHandler: RequestHandler) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
+  };
 
 // TryCatch Method
 // const asyncHandler = (fn) => async (req, res, next) => {
