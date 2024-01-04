@@ -2,10 +2,9 @@ import dotenv from "dotenv";
 import connectToDB from "./db/index";
 import { app } from "./app";
 
-dotenv.config();
-// dotenv.config({
-//   path: "/.env",
-// });
+dotenv.config({
+  path: "./.env",
+});
 
 connectToDB().then(() => {
   app.on("ERROR", (error: any) => {
