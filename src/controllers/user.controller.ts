@@ -1,3 +1,5 @@
+import { secureHeapUsed } from "crypto";
+import { generateAccessAndRefreshTokens } from "../helpers/user.helpers";
 import { User } from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
@@ -24,9 +26,6 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverImageLocalPath = (req.files as { [key: string]: any })
     ?.coverImage?.[0]?.path;
 
-  console.log("avatarLocal ", avatarLocalPath);
-  console.log("cover ", coverImageLocalPath);
-
   if (!avatarLocalPath) throw new ApiError(400, "Avatar is required");
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
@@ -51,4 +50,66 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, createdUser, "User Registered Successfully"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  const { username, email, password } = req.body;
+
+  if (!username && !email)
+    throw new ApiError(400, "username or email is required");
+
+  const user = await User.findOne({ $or: [{ username }, { email }] });
+  if (!user) throw new ApiError(404, "User not found");
+
+  const validPassword = await user.isPasswordCorrect(password);
+  if (!validPassword) throw new ApiError(402, "Invalid Credentials");
+
+  const { refreshToken, accessToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    // the cookies can be modified by client by default, by doing this step the cookie is modifiable only by server
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, accessToken, refreshToken },
+        "User Logged In Successfully."
+      )
+    );
+});
+
+const logOutUser = asyncHandler(async (req: any, res) => {
+  const userId = req.user._id;
+  await User.findByIdAndUpdate(
+    userId,
+    {
+      $set: { refreshToken: undefined },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User Logged Out Successfully"));
+});
+
+export { registerUser, loginUser, logOutUser };
