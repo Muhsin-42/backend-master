@@ -46,16 +46,19 @@ const userSchema = new Schema(
 
 //Pre middleware functions are executed just before saving or any other actions
 userSchema.pre("save", async function (next) {
-  if (this.isModified(this.password)) {
-    // to check if password is modified
-    this.password = await bcrypt.hash(this.password, 10);
-  }
+  if (this.password) this.password = await bcrypt.hash(this.password, 10);
+  // if (this.isModified(this.password)) {
+  //   // to check if password is modified
+  // }
   next();
 });
 
 // Custom methods
-userSchema.methods.isPasswordCorrect = async function (password: string) {
-  return await bcrypt.compare(password, this.password);
+userSchema.methods.isPasswordCorrect = async function (pass: string) {
+  console.log("pass ", pass);
+  console.log("this.pass ", this.password);
+  console.log("this.pass ", await bcrypt.compare(this.password, pass));
+  return await bcrypt.compare(pass, this.password);
   //   this.password is the encrypted password from db
 };
 
