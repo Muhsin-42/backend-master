@@ -12,7 +12,6 @@ const app: Express = express();
 app.use(
   cors({
     // origin: process.env.CORS_ORIGIN as string, // Ensure CORS_ORIGIN is of type string
-    // origin: process.env.CORS_ORIGIN as string, // Ensure CORS_ORIGIN is of type string
     origin: "*",
     credentials: true,
   })

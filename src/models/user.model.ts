@@ -1,6 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import {
+  ACCESS_TOKEN_EXPIRY,
+  ACCESS_TOKEN_SECRET,
+  REFRESH_TOKEN_EXPIRY,
+  REFRESH_TOKEN_SECRET,
+} from "../constants";
 
 const userSchema = new Schema(
   {
@@ -46,13 +52,11 @@ const userSchema = new Schema(
 
 //Pre middleware functions are executed just before saving or any other actions
 userSchema.pre("save", async function (next) {
-  if (this.password) this.password = await bcrypt.hash(this.password, 10);
-  // if (this.isModified(this.password)) {
-  //   // to check if password is modified
-  // }
+  if (!this.isModified("password")) return next();
+
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
-
 // Custom methods
 userSchema.methods.isPasswordCorrect = async function (pass: string) {
   console.log("pass ", pass);
@@ -70,9 +74,9 @@ userSchema.methods.generateAccessToken = function () {
       username: this.username,
       fullname: this.fullname,
     },
-    process.env.ACCESS_TOKEN_SECRET || "",
+    ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: ACCESS_TOKEN_EXPIRY,
     }
   );
 };
@@ -81,9 +85,9 @@ userSchema.methods.generateRefreshToken = function () {
     {
       _id: this._id,
     },
-    process.env.REFRESH_TOKEN_SECRET || "",
+    REFRESH_TOKEN_SECRET,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      expiresIn: REFRESH_TOKEN_EXPIRY,
     }
   );
 };
