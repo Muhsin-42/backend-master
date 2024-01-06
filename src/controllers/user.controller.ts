@@ -5,6 +5,8 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { uploadOnCloudinary } from "../utils/cloudinary";
+import jwt from "jsonwebtoken";
+import { REFRESH_TOKEN_SECRET } from "../constants";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, fullname, password } = req.body;
@@ -110,6 +112,15 @@ const logOutUser = asyncHandler(async (req: any, res) => {
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User Logged Out Successfully"));
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!refreshAccessToken) throw new ApiError(401, "Unauthorized request");
+
+  console.log("REFRESH_TOKEN_SECRET :: ", REFRESH_TOKEN_SECRET);
+  jwt.verify(incomingRefreshToken, REFRESH_TOKEN_SECRET);
 });
 
 export { registerUser, loginUser, logOutUser };
