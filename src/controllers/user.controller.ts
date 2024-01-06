@@ -1,4 +1,3 @@
-import { secureHeapUsed } from "crypto";
 import { generateAccessAndRefreshTokens } from "../helpers/user.helpers";
 import { User } from "../models/user.model";
 import { ApiError } from "../utils/ApiError";
@@ -115,12 +114,46 @@ const logOutUser = asyncHandler(async (req: any, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
-  if (!refreshAccessToken) throw new ApiError(401, "Unauthorized request");
+  try {
+    const incomingRefreshToken =
+      req.cookies.refreshToken || req.body.refreshToken;
+    if (!incomingRefreshToken) throw new ApiError(401, "Unauthorized request");
 
-  console.log("REFRESH_TOKEN_SECRET :: ", REFRESH_TOKEN_SECRET);
-  jwt.verify(incomingRefreshToken, REFRESH_TOKEN_SECRET);
+    console.log("REFRESH_TOKEN_SECRET :: ", REFRESH_TOKEN_SECRET);
+    const decodedToken: any = jwt.verify(
+      incomingRefreshToken,
+      REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) throw new ApiError(401, "Invalid Refresh Token");
+
+    if (incomingRefreshToken !== user?.refreshToken)
+      throw new ApiError(401, "Refresh token is expired or used");
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id
+    );
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          "Access token refreshed"
+        )
+      );
+  } catch (error: any) {
+    console.log("REFRESH TOKEN ERROR :: ", error);
+    throw new ApiError(401, error?.message || "Invalid refresh token");
+  }
 });
 
-export { registerUser, loginUser, logOutUser };
+export { registerUser, loginUser, logOutUser, refreshAccessToken };
